@@ -1,68 +1,92 @@
-import { Pool } from "pg";
+import Redis from "ioredis";
 
-let pool: Pool | null = null;
+let client: Redis | null = null;
 
-function getPool() {
-  if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.POSTGRES_URL,
-      ssl: { rejectUnauthorized: false },
-      max: 3,
+function getClient() {
+  if (!client) {
+    client = new Redis(process.env.REDIS_URL!, {
+      tls: { rejectUnauthorized: false },
+      lazyConnect: false,
+      maxRetriesPerRequest: 3,
     });
   }
-  return pool;
+  return client;
 }
 
-export async function sql(strings: TemplateStringsArray, ...values: any[]) {
-  // Tagged template literal for safe parameterized queries
-  let text = "";
-  const params: any[] = [];
-  strings.forEach((s, i) => {
-    text += s;
-    if (i < values.length) {
-      params.push(values[i]);
-      text += `$${params.length}`;
-    }
-  });
-  const client = getPool();
-  const res = await client.query(text, params);
-  return { rows: res.rows };
+// ── Types ────────────────────────────────────────────────────────────────────
+export interface Investor { id: string; mobile: string; createdAt: string }
+export interface Application {
+  id: string; referenceNo: string; investorId: string;
+  status: string; stepIndex: number;
+  investorType?: string; fullName?: string; pan?: string; dob?: string;
+  email?: string; addr1?: string; addr2?: string; city?: string;
+  pincode?: string; occupation?: string; income?: string;
+  acctName?: string; acctNoLast4?: string; ifsc?: string; acctType?: string;
+  fatca?: boolean; pep?: boolean;
+  submittedAt?: string; createdAt: string; updatedAt: string;
+}
+export interface Document {
+  appId: string; docKey: string; fileName: string; status: string; uploadedAt: string;
 }
 
-export async function initDb() {
-  await sql`
-    CREATE TABLE IF NOT EXISTS investors (
-      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      mobile TEXT UNIQUE NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS applications (
-      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      reference_no TEXT UNIQUE NOT NULL,
-      investor_id TEXT NOT NULL REFERENCES investors(id),
-      status TEXT DEFAULT 'DRAFT',
-      step_index INT DEFAULT 0,
-      investor_type TEXT, full_name TEXT, pan TEXT, dob DATE,
-      email TEXT, addr1 TEXT, addr2 TEXT, city TEXT, pincode TEXT,
-      occupation TEXT, income TEXT,
-      acct_name TEXT, acct_no_enc TEXT,
-      ifsc TEXT, acct_type TEXT, fatca BOOLEAN DEFAULT FALSE, pep BOOLEAN DEFAULT FALSE,
-      submitted_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS documents (
-      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-      application_id TEXT NOT NULL REFERENCES applications(id),
-      doc_key TEXT NOT NULL,
-      file_name TEXT NOT NULL,
-      status TEXT DEFAULT 'UPLOADED',
-      uploaded_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(application_id, doc_key)
-    )
-  `;
+// ── Investor ─────────────────────────────────────────────────────────────────
+export async function upsertInvestor(mobile: string): Promise<Investor> {
+  const r = getClient();
+  const existing = await r.get(`mobile:${mobile}`);
+  if (existing) return JSON.parse(existing);
+  const investor: Investor = { id: crypto.randomUUID(), mobile, createdAt: new Date().toISOString() };
+  await r.set(`mobile:${mobile}`, JSON.stringify(investor));
+  await r.set(`investor:${investor.id}`, JSON.stringify(investor));
+  return investor;
+}
+
+export async function getInvestor(id: string): Promise<Investor | null> {
+  const r = getClient();
+  const v = await r.get(`investor:${id}`);
+  return v ? JSON.parse(v) : null;
+}
+
+// ── Application ───────────────────────────────────────────────────────────────
+function refNo() {
+  return `STR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999999)).padStart(6, "0")}`;
+}
+
+export async function getOrCreateApplication(investorId: string): Promise<Application> {
+  const r = getClient();
+  const appId = await r.get(`activeApp:${investorId}`);
+  if (appId) {
+    const app = await r.get(`app:${appId}`);
+    if (app) return JSON.parse(app);
+  }
+  const app: Application = {
+    id: crypto.randomUUID(), referenceNo: refNo(), investorId,
+    status: "DRAFT", stepIndex: 0,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+  await r.set(`app:${app.id}`, JSON.stringify(app));
+  await r.set(`activeApp:${investorId}`, app.id);
+  return app;
+}
+
+export async function updateApplication(appId: string, patch: Partial<Application>) {
+  const r = getClient();
+  const raw = await r.get(`app:${appId}`);
+  if (!raw) throw new Error("Application not found");
+  const app = { ...JSON.parse(raw), ...patch, updatedAt: new Date().toISOString() };
+  await r.set(`app:${appId}`, JSON.stringify(app));
+  return app as Application;
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+export async function upsertDocument(appId: string, docKey: string, fileName: string): Promise<Document> {
+  const r = getClient();
+  const doc: Document = { appId, docKey, fileName, status: "UPLOADED", uploadedAt: new Date().toISOString() };
+  await r.hset(`docs:${appId}`, docKey, JSON.stringify(doc));
+  return doc;
+}
+
+export async function getDocuments(appId: string): Promise<Document[]> {
+  const r = getClient();
+  const hash = await r.hgetall(`docs:${appId}`);
+  return Object.values(hash ?? {}).map(v => JSON.parse(v));
 }
