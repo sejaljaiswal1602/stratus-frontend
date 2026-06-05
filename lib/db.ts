@@ -1,6 +1,33 @@
-import { sql } from "@vercel/postgres";
+import { Pool } from "pg";
 
-export { sql };
+let pool: Pool | null = null;
+
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.POSTGRES_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 3,
+    });
+  }
+  return pool;
+}
+
+export async function sql(strings: TemplateStringsArray, ...values: any[]) {
+  // Tagged template literal for safe parameterized queries
+  let text = "";
+  const params: any[] = [];
+  strings.forEach((s, i) => {
+    text += s;
+    if (i < values.length) {
+      params.push(values[i]);
+      text += `$${params.length}`;
+    }
+  });
+  const client = getPool();
+  const res = await client.query(text, params);
+  return { rows: res.rows };
+}
 
 export async function initDb() {
   await sql`
@@ -20,7 +47,7 @@ export async function initDb() {
       investor_type TEXT, full_name TEXT, pan TEXT, dob DATE,
       email TEXT, addr1 TEXT, addr2 TEXT, city TEXT, pincode TEXT,
       occupation TEXT, income TEXT,
-      acct_name TEXT, acct_no_enc TEXT, acct_no_iv TEXT, acct_no_tag TEXT,
+      acct_name TEXT, acct_no_enc TEXT,
       ifsc TEXT, acct_type TEXT, fatca BOOLEAN DEFAULT FALSE, pep BOOLEAN DEFAULT FALSE,
       submitted_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
