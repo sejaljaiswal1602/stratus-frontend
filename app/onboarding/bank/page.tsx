@@ -27,7 +27,7 @@ export default function BankPage() {
   async function handleNext() {
     setLoading(true);
     try {
-      await api.put("/applications/me/step/3", {
+      await api.put("/api/applications/me/step/3", {
         acctName: data.acctName, acctNo: data.acctNo, acctNo2: data.acctNo2,
         ifsc: ifscVal, acctType: data.acctType, fatca: data.fatca, pep: data.pep,
       });

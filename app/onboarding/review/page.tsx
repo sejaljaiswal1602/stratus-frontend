@@ -45,7 +45,7 @@ export default function ReviewPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<Application>("/applications/me")
+    api.get<Application>("/api/applications/me")
       .then(setApp)
       .catch(() => router.push("/onboarding/signin"));
   }, [router]);
@@ -53,7 +53,7 @@ export default function ReviewPage() {
   async function handleSubmit() {
     setLoading(true);
     try {
-      await api.post("/applications/me/submit", {});
+      await api.post("/api/applications/me/submit", {});
       router.push("/onboarding/submitted");
     } catch (e: any) {
       setToast(e.message ?? "Submission failed. Please try again.");

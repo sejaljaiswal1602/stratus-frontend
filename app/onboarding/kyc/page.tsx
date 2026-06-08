@@ -21,7 +21,7 @@ export default function KycPage() {
   async function handleNext() {
     setLoading(true);
     try {
-      await api.put("/applications/me/step/1", data);
+      await api.put("/api/applications/me/step/1", data);
       router.push("/onboarding/documents");
     } catch (e: any) {
       if (e.status === 401) router.push("/onboarding/signin");

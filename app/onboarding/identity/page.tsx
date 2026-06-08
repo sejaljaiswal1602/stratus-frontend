@@ -28,7 +28,7 @@ export default function IdentityPage() {
   async function handleNext() {
     setLoading(true);
     try {
-      await api.put("/applications/me/step/0", {
+      await api.put("/api/applications/me/step/0", {
         investorType: data.investorType,
         fullName: data.fullName.trim(),
         pan: panVal,

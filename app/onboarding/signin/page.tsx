@@ -99,7 +99,7 @@ export default function SignInPage() {
     setLoading(true); setError(null);
     try {
       const res = await api.post<{ accessToken: string; refreshToken: string }>(
-        "/auth/signin", { countryCode: country.code, mobile: number }
+        "/api/auth/signin", { countryCode: country.code, mobile: number }
       );
       api.setTokens(res.accessToken, res.refreshToken);
       router.push("/onboarding/identity");

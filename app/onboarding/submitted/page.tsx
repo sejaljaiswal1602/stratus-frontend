@@ -19,7 +19,7 @@ export default function SubmittedPage() {
   const [app, setApp] = useState<Application | null>(null);
 
   useEffect(() => {
-    api.get<Application>("/applications/me").then(setApp).catch(() => {});
+    api.get<Application>("/api/applications/me").then(setApp).catch(() => {});
   }, []);
 
   const firstName = app?.identity.fullName?.split(" ")[0] ?? "Investor";
