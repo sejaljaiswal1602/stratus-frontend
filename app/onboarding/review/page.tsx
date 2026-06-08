@@ -1,11 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, PenLine } from "lucide-react";
+import { CheckCircle2, PenLine, AlertCircle } from "lucide-react";
 import Shell from "@/components/onboarding/Shell";
 import { StepHeader, StepNav } from "@/components/onboarding/StepLayout";
-import Button from "@/components/ui/Button";
-import Toast from "@/components/ui/Toast";
 import { api, type Application } from "@/lib/api";
 
 function ReviewRow({ label, value }: { label: string; value?: string | null }) {
@@ -17,18 +15,12 @@ function ReviewRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function ReviewCard({
-  title, onEdit, children,
-}: { title: string; onEdit: () => void; children: React.ReactNode }) {
+function ReviewCard({ title, onEdit, children }: { title: string; onEdit: () => void; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-[var(--slate-200)] rounded-[var(--r-lg)] p-[22px] mb-4"
-         style={{ boxShadow: "var(--shadow-xs)" }}>
+    <div className="bg-white border border-[var(--slate-200)] rounded-[var(--r-lg)] p-[22px] mb-4" style={{ boxShadow: "var(--shadow-xs)" }}>
       <div className="flex items-center justify-between mb-[6px]">
         <span className="text-[18px] font-semibold" style={{ fontFamily: "var(--font-display)", letterSpacing: "-.01em" }}>{title}</span>
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-[6px] text-[13px] font-medium text-[var(--cyan-700)] hover:bg-[var(--cyan-50)] px-[10px] py-1 rounded-[var(--r-md)] transition-colors"
-        >
+        <button onClick={onEdit} className="flex items-center gap-[6px] text-[13px] font-medium text-[var(--cyan-700)] hover:bg-[var(--cyan-50)] px-[10px] py-1 rounded-[var(--r-md)] transition-colors">
           <PenLine size={13} strokeWidth={1.75} /> Edit
         </button>
       </div>
@@ -42,7 +34,7 @@ export default function ReviewPage() {
   const [app, setApp] = useState<Application | null>(null);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api.get<Application>("/api/applications/me")
@@ -52,18 +44,21 @@ export default function ReviewPage() {
 
   async function handleSubmit() {
     setLoading(true);
+    setError(null);
     try {
       await api.post("/api/applications/me/submit", {});
       router.push("/onboarding/submitted");
     } catch (e: any) {
-      setToast(e.message ?? "Submission failed. Please try again.");
-      setTimeout(() => setToast(null), 3500);
+      setError(e.message ?? "Submission failed. Please try again.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
   }
 
   const docCount = app?.documents.length ?? 0;
+  const fatcaLabel = app?.bank.fatca === true ? "Yes" : app?.bank.fatca === false ? "No" : "—";
+  const pepLabel   = app?.bank.pep   === true ? "Yes" : app?.bank.pep   === false ? "No" : "—";
 
   return (
     <Shell stepIndex={4}>
@@ -71,34 +66,50 @@ export default function ReviewPage() {
         <StepHeader
           overline="Step 5 · Review"
           title="Review & submit"
-          lead="Check everything is correct. After you submit, our team verifies your application."
+          lead="Check everything is correct. After you submit, our team will be in touch within one business day."
         />
 
+        {/* Error banner — visible, not a disappearing toast */}
+        {error && (
+          <div className="flex items-start gap-3 mb-5 p-4 rounded-[var(--r-lg)] bg-[var(--danger-bg)] border border-[var(--danger-border)]">
+            <AlertCircle size={18} strokeWidth={1.75} color="var(--danger)" className="flex-shrink-0 mt-px" />
+            <span className="text-[13px] text-[var(--danger)] leading-[1.5]">{error}</span>
+          </div>
+        )}
+
         <ReviewCard title="Identity & KYC" onEdit={() => router.push("/onboarding/identity")}>
-          <ReviewRow label="Investor type" value={app?.identity.investorType} />
-          <ReviewRow label="Name" value={app?.identity.fullName} />
-          <ReviewRow label="PAN" value={app?.identity.pan} />
-          <ReviewRow label="Email" value={app?.kyc.email} />
-          <ReviewRow label="City" value={app?.kyc.city ? `${app.kyc.city} · ${app.kyc.pincode}` : null} />
+          <ReviewRow label="Investor type"  value={app?.identity.investorType} />
+          <ReviewRow label="Full name"      value={app?.identity.fullName} />
+          <ReviewRow label="PAN"            value={app?.identity.pan} />
+          <ReviewRow label="Email"          value={app?.kyc.email} />
+          <ReviewRow label="Address"        value={[app?.kyc.addr1, app?.kyc.addr2, app?.kyc.city, app?.kyc.pincode].filter(Boolean).join(", ")} />
+          <ReviewRow label="Occupation"     value={app?.kyc.occupation} />
+          <ReviewRow label="Annual income"  value={app?.kyc.income} />
         </ReviewCard>
 
         <ReviewCard title="Documents" onEdit={() => router.push("/onboarding/documents")}>
-          <div className="flex items-center gap-[8px] mt-1 text-[var(--success)]">
-            <CheckCircle2 size={16} strokeWidth={1.75} />
+          <div className="flex items-center gap-[8px] mt-1">
+            <CheckCircle2 size={16} strokeWidth={1.75} color={docCount === 6 ? "var(--success)" : "var(--warning)"} />
             <span className="text-[13px] text-[var(--fg1)]">{docCount} of 6 documents uploaded</span>
+            {docCount < 6 && (
+              <span className="text-[12px] text-[var(--warning)] ml-1">— please upload all 6</span>
+            )}
           </div>
         </ReviewCard>
 
-        <ReviewCard title="Bank account" onEdit={() => router.push("/onboarding/bank")}>
-          <ReviewRow label="Account" value={app?.bank.acctMasked ? `${app.bank.acctMasked} · ${app.bank.acctType}` : null} />
-          <ReviewRow label="IFSC" value={app?.bank.ifsc} />
+        <ReviewCard title="Bank & FATCA" onEdit={() => router.push("/onboarding/bank")}>
+          <ReviewRow label="Account name"    value={app?.bank.acctName} />
+          <ReviewRow label="Account"         value={app?.bank.acctMasked ? `${app.bank.acctMasked} · ${app.bank.acctType}` : null} />
+          <ReviewRow label="IFSC"            value={app?.bank.ifsc} />
+          <ReviewRow label="India tax resident?" value={fatcaLabel} />
+          <ReviewRow label="PEP?"            value={pepLabel} />
         </ReviewCard>
 
-        <label className="flex items-start gap-3 cursor-pointer p-[2px]">
+        <label className="flex items-start gap-3 cursor-pointer p-[2px] mb-2">
           <input
             type="checkbox"
             checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
+            onChange={e => setAgree(e.target.checked)}
             className="mt-[2px] w-[18px] h-[18px] flex-shrink-0 accent-[var(--cyan-600)]"
           />
           <span className="text-[13px] leading-[1.5] text-[var(--fg1)]">
@@ -115,7 +126,6 @@ export default function ReviewPage() {
           loading={loading}
         />
       </div>
-      {toast && <Toast message={toast} />}
     </Shell>
   );
 }
