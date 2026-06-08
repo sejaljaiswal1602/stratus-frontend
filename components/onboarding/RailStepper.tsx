@@ -5,6 +5,7 @@ const STEPS = [
   { key: "kyc",       title: "KYC details", sub: "Personal & entity info" },
   { key: "documents", title: "Documents",   sub: "Upload & verify" },
   { key: "bank",      title: "Bank & FATCA",sub: "Account & declarations" },
+  { key: "nominee",   title: "Nominee",     sub: "Nominee details" },
   { key: "review",    title: "Review",      sub: "Confirm & submit" },
 ];
 
@@ -31,15 +32,17 @@ export default function RailStepper({ currentIndex }: { currentIndex: number }) 
         return (
           <div key={s.key} className="flex gap-[14px] items-start">
             <div className="flex flex-col items-center flex-shrink-0">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[12.5px] font-semibold transition-all duration-200 ${dotCls}`}
-                   style={{ fontFamily: "var(--font-mono)" }}>
+              <div
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-[12.5px] font-semibold transition-all duration-200 ${dotCls}`}
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
                 {done ? <Check size={14} strokeWidth={2.5} /> : i + 1}
               </div>
-              {!last && <div className={`w-[2px] flex-1 min-h-[26px] my-[3px] ${lineCls}`} />}
+              {!last && <div className={`w-[2px] flex-1 min-h-[22px] my-[3px] ${lineCls}`} />}
             </div>
-            <div className="pt-[4px] pb-[18px]">
-              <div className={`text-[14px] font-semibold leading-[1.2] ${titleCls}`}>{s.title}</div>
-              <div className={`text-[11.5px] mt-[2px] ${subCls}`}>{s.sub}</div>
+            <div className="pt-[4px] pb-[14px]">
+              <div className={`text-[13px] font-semibold leading-[1.2] ${titleCls}`}>{s.title}</div>
+              <div className={`text-[11px] mt-[2px] ${subCls}`}>{s.sub}</div>
             </div>
           </div>
         );

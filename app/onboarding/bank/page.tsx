@@ -85,7 +85,7 @@ export default function BankPage() {
         fatca: data.fatca ?? false,
         pep:   data.pep   ?? false,
       });
-      router.push("/onboarding/review");
+      router.push("/onboarding/nominee");
     } catch (e: any) {
       if (e.status === 401) router.push("/onboarding/signin");
     } finally {
@@ -97,7 +97,7 @@ export default function BankPage() {
 
   return (
     <Shell stepIndex={3}>
-      <div className="max-w-[560px] animate-fade-in">
+      <div className="max-w-[560px] mx-auto animate-fade-in">
         <StepHeader
           overline="Step 4 · Bank & FATCA"
           title="Bank account & declarations"

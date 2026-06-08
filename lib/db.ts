@@ -23,6 +23,8 @@ export interface Application {
   pincode?: string; occupation?: string; income?: string;
   acctName?: string; acctNoLast4?: string; ifsc?: string; acctType?: string;
   fatca?: boolean; pep?: boolean;
+  nomineeName?: string; nomineeDob?: string; nomineeRelationship?: string;
+  nomineeIdType?: string; nomineeIdFile?: string;
   submittedAt?: string; createdAt: string; updatedAt: string;
 }
 export interface Document {
@@ -105,9 +107,9 @@ export async function getAllApplications(): Promise<Application[]> {
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
-export async function upsertDocument(appId: string, docKey: string, fileName: string, blobUrl?: string): Promise<Document> {
+export async function upsertDocument(appId: string, docKey: string, fileName: string, blobUrl?: string, status?: string): Promise<Document> {
   const r = getClient();
-  const doc: Document = { appId, docKey, fileName, blobUrl, status: "UPLOADED", uploadedAt: new Date().toISOString() };
+  const doc: Document = { appId, docKey, fileName, blobUrl, status: status ?? "UPLOADED", uploadedAt: new Date().toISOString() };
   await r.hset(`docs:${appId}`, docKey, JSON.stringify(doc));
   return doc;
 }

@@ -53,7 +53,7 @@ export default function KycPage() {
 
   return (
     <Shell stepIndex={1}>
-      <div className="max-w-[560px] animate-fade-in">
+      <div className="max-w-[560px] mx-auto animate-fade-in">
         <StepHeader
           overline="Step 2 · KYC details"
           title="Your contact & profile"

@@ -75,7 +75,7 @@ export default function Shell({
               <img
                 src="https://www.irage.in/img/logo.png"
                 alt="iRage"
-                className="h-[22px]"
+                className="h-[30px] w-auto object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                   (e.currentTarget.nextElementSibling as HTMLElement)?.removeAttribute("hidden");
@@ -117,7 +117,7 @@ export default function Shell({
           </header>
 
           {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto px-14 py-11 pb-16">
+          <div className="flex-1 overflow-y-auto px-10 py-11 pb-16">
             {children}
           </div>
         </main>

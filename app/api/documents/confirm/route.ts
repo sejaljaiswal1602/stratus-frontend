@@ -4,8 +4,9 @@ import { getInvestor } from "@/lib/auth";
 import { z } from "zod";
 
 const schema = z.object({
-  docKey: z.enum(["pan","address","bank","photo"]),
+  docKey: z.string(),
   fileName: z.string(),
+  status: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const app = await getOrCreateApplication(investor.sub);
-    await upsertDocument(app.id, parsed.data.docKey, parsed.data.fileName);
+    await upsertDocument(app.id, parsed.data.docKey, parsed.data.fileName, undefined, parsed.data.status);
     return NextResponse.json({ ok: true, docKey: parsed.data.docKey });
   } catch (e: any) {
     return NextResponse.json({ error: "Failed to record document" }, { status: 500 });

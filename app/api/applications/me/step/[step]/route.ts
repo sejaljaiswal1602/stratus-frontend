@@ -8,6 +8,13 @@ const schemas: Record<number, z.ZodTypeAny> = {
   1: z.object({ email: z.string().email(), addr1: z.string().min(2), addr2: z.string().optional(), city: z.string(), pincode: z.string().regex(/^\d{6}$/), occupation: z.string(), income: z.string() }),
   3: z.object({ acctName: z.string().optional(), acctNo: z.string().regex(/^\d{9,18}$/), acctNo2: z.string(), ifsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/), acctType: z.string(), fatca: z.boolean(), pep: z.boolean() })
     .refine(d => d.acctNo === d.acctNo2, { message: "Account numbers don't match", path: ["acctNo2"] }),
+  4: z.object({
+    nomineeName: z.string().min(2),
+    nomineeDob: z.string(),
+    nomineeRelationship: z.string().optional(),
+    nomineeIdType: z.string(),
+    nomineeIdFile: z.string().optional(),
+  }),
 };
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ step: string }> }) {
@@ -31,6 +38,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ step
     if (step === 0) patch = { ...patch, investorType: d.investorType, fullName: d.fullName, pan: d.pan.toUpperCase(), dob: d.dob };
     if (step === 1) patch = { ...patch, email: d.email, addr1: d.addr1, addr2: d.addr2 ?? null, city: d.city, pincode: d.pincode, occupation: d.occupation, income: d.income };
     if (step === 3) patch = { ...patch, acctName: d.acctName ?? null, acctNoLast4: d.acctNo.slice(-4), ifsc: d.ifsc.toUpperCase(), acctType: d.acctType, fatca: d.fatca, pep: d.pep };
+    if (step === 4) patch = { ...patch, nomineeName: d.nomineeName, nomineeDob: d.nomineeDob, nomineeRelationship: d.nomineeRelationship ?? null, nomineeIdType: d.nomineeIdType, nomineeIdFile: d.nomineeIdFile ?? null };
 
     await updateApplication(app.id, patch);
     return NextResponse.json({ ok: true });

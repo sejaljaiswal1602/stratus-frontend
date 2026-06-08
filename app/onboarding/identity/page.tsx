@@ -62,7 +62,7 @@ export default function IdentityPage() {
 
   return (
     <Shell stepIndex={0}>
-      <div className="max-w-[560px] animate-fade-in">
+      <div className="max-w-[560px] mx-auto animate-fade-in">
         <StepHeader
           overline="Step 1 · Identity"
           title="Confirm your identity"

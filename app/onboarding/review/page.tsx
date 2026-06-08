@@ -61,8 +61,8 @@ export default function ReviewPage() {
   const pepLabel   = app?.bank.pep   === true ? "Yes" : app?.bank.pep   === false ? "No" : "—";
 
   return (
-    <Shell stepIndex={4}>
-      <div className="max-w-[600px] animate-fade-in">
+    <Shell stepIndex={5}>
+      <div className="max-w-[600px] mx-auto animate-fade-in">
         <StepHeader
           overline="Step 5 · Review"
           title="Review & submit"
@@ -97,12 +97,19 @@ export default function ReviewPage() {
           </div>
         </ReviewCard>
 
-        <ReviewCard title="Bank & FATCA" onEdit={() => router.push("/onboarding/bank")}>
+        <ReviewCard title="Bank &amp; FATCA" onEdit={() => router.push("/onboarding/bank")}>
           <ReviewRow label="Account name"    value={app?.bank.acctName} />
           <ReviewRow label="Account"         value={app?.bank.acctMasked ? `${app.bank.acctMasked} · ${app.bank.acctType}` : null} />
           <ReviewRow label="IFSC"            value={app?.bank.ifsc} />
           <ReviewRow label="India tax resident?" value={fatcaLabel} />
           <ReviewRow label="PEP?"            value={pepLabel} />
+        </ReviewCard>
+
+        <ReviewCard title="Nominee" onEdit={() => router.push("/onboarding/nominee")}>
+          <ReviewRow label="Name"            value={(app as any)?.nomineeName} />
+          <ReviewRow label="Date of birth"   value={(app as any)?.nomineeDob ? new Date((app as any).nomineeDob).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : null} />
+          <ReviewRow label="Relationship"    value={(app as any)?.nomineeRelationship} />
+          <ReviewRow label="ID type"         value={(app as any)?.nomineeIdType} />
         </ReviewCard>
 
         <label className="flex items-start gap-3 cursor-pointer p-[2px] mb-2">
@@ -119,7 +126,7 @@ export default function ReviewPage() {
         </label>
 
         <StepNav
-          onBack={() => router.push("/onboarding/bank")}
+          onBack={() => router.push("/onboarding/nominee")}
           onNext={handleSubmit}
           nextDisabled={!agree || !app}
           nextLabel="Submit application"

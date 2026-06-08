@@ -54,4 +54,5 @@ export type Application = {
   kyc: { email: string | null; addr1: string | null; addr2: string | null; city: string | null; pincode: string | null; occupation: string | null; income: string | null };
   bank: { acctName: string | null; acctMasked: string | null; ifsc: string | null; acctType: string | null; fatca: boolean; pep: boolean };
   documents: { docKey: string; fileName: string; status: string }[];
+  nomineeName?: string; nomineeDob?: string; nomineeRelationship?: string; nomineeIdType?: string;
 };

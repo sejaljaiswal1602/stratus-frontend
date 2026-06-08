@@ -9,6 +9,8 @@ function format(app: any, docs: any[]) {
     kyc: { email: app.email, addr1: app.addr1, addr2: app.addr2, city: app.city, pincode: app.pincode, occupation: app.occupation, income: app.income },
     bank: { acctName: app.acctName, acctMasked: app.acctNoLast4 ? `••••${app.acctNoLast4}` : null, ifsc: app.ifsc, acctType: app.acctType, fatca: app.fatca, pep: app.pep },
     documents: docs.map(d => ({ docKey: d.docKey, fileName: d.fileName, status: d.status })),
+    nomineeName: app.nomineeName, nomineeDob: app.nomineeDob,
+    nomineeRelationship: app.nomineeRelationship, nomineeIdType: app.nomineeIdType,
   };
 }
 
