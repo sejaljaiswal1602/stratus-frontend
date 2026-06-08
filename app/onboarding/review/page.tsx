@@ -85,7 +85,7 @@ export default function ReviewPage() {
         <ReviewCard title="Documents" onEdit={() => router.push("/onboarding/documents")}>
           <div className="flex items-center gap-[8px] mt-1 text-[var(--success)]">
             <CheckCircle2 size={16} strokeWidth={1.75} />
-            <span className="text-[13px] text-[var(--fg1)]">{docCount} of 4 documents uploaded</span>
+            <span className="text-[13px] text-[var(--fg1)]">{docCount} of 6 documents uploaded</span>
           </div>
         </ReviewCard>
 

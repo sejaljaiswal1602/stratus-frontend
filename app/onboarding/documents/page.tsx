@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreditCard, Home, Landmark, User, Info } from "lucide-react";
+import { BookOpen, Zap, Landmark, CreditCard, Shield, User } from "lucide-react";
 import Shell from "@/components/onboarding/Shell";
 import { StepHeader, StepNav } from "@/components/onboarding/StepLayout";
 import Dropzone from "@/components/ui/Dropzone";
@@ -10,10 +10,42 @@ import Badge from "@/components/ui/Badge";
 import { api } from "@/lib/api";
 
 const DOCS = [
-  { key: "pan",     label: "PAN card",        desc: "Clear scan or photo of your PAN card",         Icon: CreditCard },
-  { key: "address", label: "Address proof",    desc: "Aadhaar, passport, or utility bill",           Icon: Home },
-  { key: "bank",    label: "Cancelled cheque", desc: "Or bank statement showing IFSC & account no.", Icon: Landmark },
-  { key: "photo",   label: "Photograph",       desc: "Recent passport-size photo",                   Icon: User },
+  {
+    key: "passport",
+    label: "Passport",
+    desc: "Valid passport — photo page clearly visible",
+    Icon: BookOpen,
+  },
+  {
+    key: "utility_bill",
+    label: "Utility bill",
+    desc: "Latest bill — dated within the last 2 months (electricity, gas, water, or phone)",
+    Icon: Zap,
+  },
+  {
+    key: "bank_statement",
+    label: "Bank statement",
+    desc: "Last 3 months — must show your name, account number, and address",
+    Icon: Landmark,
+  },
+  {
+    key: "national_id",
+    label: "National identity card",
+    desc: "Government-issued national ID (both sides if applicable)",
+    Icon: CreditCard,
+  },
+  {
+    key: "aadhaar",
+    label: "Aadhaar card",
+    desc: "Front and back of your Aadhaar card",
+    Icon: Shield,
+  },
+  {
+    key: "photo",
+    label: "Passport-size photograph",
+    desc: "Recent photo against a plain white or light background",
+    Icon: User,
+  },
 ] as const;
 
 type DocKey = typeof DOCS[number]["key"];
@@ -28,7 +60,9 @@ export default function DocumentsPage() {
 
   async function handleFile(docKey: DocKey, file: File) {
     if (file.size > 10 * 1024 * 1024) { setError(`${file.name} exceeds 10 MB.`); return; }
-    if (!["application/pdf","image/jpeg","image/png"].includes(file.type)) { setError("Only PDF, JPG, or PNG allowed."); return; }
+    if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
+      setError("Only PDF, JPG, or PNG allowed."); return;
+    }
     setError(null);
     setFiles(f => ({ ...f, [docKey]: { name: file.name, meta: "Uploading…", status: "uploading" } }));
 
@@ -44,23 +78,21 @@ export default function DocumentsPage() {
         body: form,
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Upload failed" }));
-        throw new Error(err.error ?? "Upload failed");
-      }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
 
-      const size = file.size < 1024*1024
-        ? `${Math.round(file.size/1024)} KB`
-        : `${(file.size/1024/1024).toFixed(1)} MB`;
+      const size = file.size < 1024 * 1024
+        ? `${Math.round(file.size / 1024)} KB`
+        : `${(file.size / 1024 / 1024).toFixed(1)} MB`;
       setFiles(f => ({ ...f, [docKey]: { name: file.name, meta: `${size} · uploaded`, status: "review" } }));
     } catch (e: any) {
-      setFiles(f => { const n={...f}; delete n[docKey]; return n; });
+      setFiles(f => { const n = { ...f }; delete n[docKey]; return n; });
       setError(e.message ?? "Upload failed. Please try again.");
     }
   }
 
   function handleRemove(docKey: DocKey) {
-    setFiles(f => { const n={...f}; delete n[docKey]; return n; });
+    setFiles(f => { const n = { ...f }; delete n[docKey]; return n; });
   }
 
   return (
@@ -69,7 +101,7 @@ export default function DocumentsPage() {
         <StepHeader
           overline="Step 3 · Documents"
           title="Upload your documents"
-          lead="Accepted: PDF, JPG or PNG, up to 10 MB each. Verification usually takes one business day."
+          lead="PDF, JPG, or PNG — up to 10 MB each. All documents are stored securely."
         />
 
         {error && (
@@ -83,7 +115,7 @@ export default function DocumentsPage() {
             const f = files[key];
             return (
               <div key={key} className="bg-white border border-[var(--slate-200)] rounded-[var(--r-lg)] p-[22px]"
-                   style={{ boxShadow: "var(--shadow-xs)" }}>
+                style={{ boxShadow: "var(--shadow-xs)" }}>
                 <div className="flex items-start gap-3 mb-[14px]">
                   <div className="w-9 h-9 rounded-[9px] bg-[var(--cyan-50)] text-[var(--cyan-600)] flex items-center justify-center flex-shrink-0">
                     <Icon size={20} strokeWidth={1.75} />
@@ -97,18 +129,12 @@ export default function DocumentsPage() {
                   </div>
                 </div>
                 {f
-                  ? <FileRow name={f.name} meta={f.meta} status={f.status} onRemove={f.status !== "uploading" ? () => handleRemove(key) : undefined} />
+                  ? <FileRow name={f.name} meta={f.meta} status={f.status}
+                      onRemove={f.status !== "uploading" ? () => handleRemove(key) : undefined} />
                   : <Dropzone label={label} onFile={file => handleFile(key, file)} />}
               </div>
             );
           })}
-        </div>
-
-        <div className="mt-4 flex items-start gap-[11px] bg-[var(--cyan-50)] border border-[var(--cyan-100)] rounded-[var(--r-lg)] px-[22px] py-[18px]">
-          <Info size={20} strokeWidth={1.75} color="var(--cyan-600)" className="flex-shrink-0 mt-px" />
-          <span className="text-[13px] text-[var(--cyan-800)]">
-            Documents are stored securely and used only for KYC verification.
-          </span>
         </div>
 
         <StepNav

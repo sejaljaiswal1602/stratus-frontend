@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     const app = await getOrCreateApplication(investor.sub);
     const docs = await getDocuments(app.id);
     const uploaded = docs.map(d => d.docKey);
-    const missing = ["pan","address","bank","photo"].filter(k => !uploaded.includes(k));
+    const missing = ["passport","utility_bill","bank_statement","national_id","aadhaar","photo"].filter(k => !uploaded.includes(k));
     if (missing.length) return NextResponse.json({ error: "Missing documents", missing }, { status: 422 });
     if (!app.fullName || !app.pan || !app.email || !app.acctNoLast4 || !app.fatca)
       return NextResponse.json({ error: "Complete all steps before submitting" }, { status: 422 });
