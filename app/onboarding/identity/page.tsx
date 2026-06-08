@@ -1,17 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/onboarding/Shell";
 import { StepHeader, StepNav } from "@/components/onboarding/StepLayout";
 import TextField from "@/components/ui/TextField";
 import SelectField from "@/components/ui/SelectField";
-import { api } from "@/lib/api";
+import { api, type Application } from "@/lib/api";
 
 const PAN_RE = /^[A-Z]{5}\d{4}[A-Z]$/;
 
 export default function IdentityPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [data, setData] = useState({
     investorType: "Individual",
     fullName: "",
@@ -19,7 +20,22 @@ export default function IdentityPage() {
     dob: "",
   });
 
-  const set = (patch: Partial<typeof data>) => setData((d) => ({ ...d, ...patch }));
+  const set = (patch: Partial<typeof data>) => setData(d => ({ ...d, ...patch }));
+
+  // Pre-fill from saved application
+  useEffect(() => {
+    api.get<Application>("/api/applications/me")
+      .then(app => {
+        setData({
+          investorType: app.identity.investorType ?? "Individual",
+          fullName: app.identity.fullName ?? "",
+          pan: app.identity.pan ?? "",
+          dob: app.identity.dob ? app.identity.dob.toString().slice(0, 10) : "",
+        });
+      })
+      .catch(() => router.push("/onboarding/signin"))
+      .finally(() => setFetching(false));
+  }, [router]);
 
   const panVal = data.pan.toUpperCase();
   const panErr = data.pan && !PAN_RE.test(panVal) ? "Enter a valid 10-character PAN." : null;
@@ -42,6 +58,8 @@ export default function IdentityPage() {
     }
   }
 
+  if (fetching) return <Shell stepIndex={0}><div className="max-w-[560px]"><div className="h-8 w-48 bg-[var(--slate-100)] rounded animate-pulse mb-4" /><div className="h-64 bg-[var(--slate-100)] rounded animate-pulse" /></div></Shell>;
+
   return (
     <Shell stepIndex={0}>
       <div className="max-w-[560px] animate-fade-in">
@@ -54,7 +72,7 @@ export default function IdentityPage() {
           <SelectField
             label="I am onboarding as"
             value={data.investorType}
-            onChange={(e) => set({ investorType: e.target.value })}
+            onChange={e => set({ investorType: e.target.value })}
           >
             <option>Individual</option>
             <option>HUF</option>
@@ -67,7 +85,7 @@ export default function IdentityPage() {
             label="Full name"
             placeholder="Rahul Mehta"
             value={data.fullName}
-            onChange={(e) => set({ fullName: e.target.value })}
+            onChange={e => set({ fullName: e.target.value })}
             help="Exactly as printed on your PAN card."
           />
 
@@ -79,7 +97,7 @@ export default function IdentityPage() {
                 placeholder="ABCDE1234F"
                 maxLength={10}
                 value={data.pan}
-                onChange={(e) => set({ pan: e.target.value.toUpperCase() })}
+                onChange={e => set({ pan: e.target.value.toUpperCase() })}
                 error={panErr}
               />
             </div>
@@ -88,7 +106,7 @@ export default function IdentityPage() {
                 label="Date of birth"
                 type="date"
                 value={data.dob}
-                onChange={(e) => set({ dob: e.target.value })}
+                onChange={e => set({ dob: e.target.value })}
               />
             </div>
           </div>

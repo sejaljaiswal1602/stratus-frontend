@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { type Application } from "@/lib/api";
 import { BookOpen, Zap, Landmark, CreditCard, Shield, User } from "lucide-react";
 import Shell from "@/components/onboarding/Shell";
 import { StepHeader, StepNav } from "@/components/onboarding/StepLayout";
@@ -55,6 +56,21 @@ export default function DocumentsPage() {
   const router = useRouter();
   const [files, setFiles] = useState<Partial<Record<DocKey, FileState>>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill previously uploaded docs
+  useEffect(() => {
+    api.get<Application>("/api/applications/me").then(app => {
+      const pre: Partial<Record<DocKey, FileState>> = {};
+      for (const doc of app.documents) {
+        pre[doc.docKey as DocKey] = {
+          name: doc.fileName,
+          meta: "previously uploaded",
+          status: "review",
+        };
+      }
+      setFiles(pre);
+    }).catch(() => {});
+  }, []);
 
   const allUploaded = DOCS.every((d) => files[d.key]);
 
