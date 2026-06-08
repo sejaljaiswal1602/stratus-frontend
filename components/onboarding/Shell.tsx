@@ -1,10 +1,12 @@
 "use client";
 import { ReactNode } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LogOut, Check } from "lucide-react";
 import BrandLockup from "./BrandLockup";
 import RailStepper, { STEPS } from "./RailStepper";
 import Button from "@/components/ui/Button";
+import Toast from "@/components/ui/Toast";
+import { useState } from "react";
 
 interface ShellProps {
   children: ReactNode;
@@ -12,7 +14,6 @@ interface ShellProps {
   showStepper?: boolean;
   showResume?: boolean;
   onResume?: () => void;
-  onSave?: () => void;
 }
 
 export default function Shell({
@@ -21,8 +22,21 @@ export default function Shell({
   showStepper = true,
   showResume = false,
   onResume,
-  onSave,
 }: ShellProps) {
+  const router = useRouter();
+  const [toast, setToast] = useState<string | null>(null);
+
+  function handleSaveExit() {
+    // Mark progress so "Resume" link appears on sign-in
+    if (typeof window !== "undefined") {
+      localStorage.setItem("stratus_has_progress", "1");
+    }
+    setToast("Progress saved — resume any time.");
+    setTimeout(() => {
+      router.push("/onboarding/signin");
+    }, 1200);
+  }
+
   return (
     <div className="min-h-screen bg-[var(--slate-150)] flex items-start justify-center">
       <div
@@ -47,7 +61,7 @@ export default function Shell({
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-[160px] pointer-events-none"
-               style={{ background: "linear-gradient(180deg,transparent,rgba(0,178,219,.06))" }} />
+            style={{ background: "linear-gradient(180deg,transparent,rgba(0,178,219,.06))" }} />
         </aside>
 
         {/* Work area */}
@@ -58,15 +72,13 @@ export default function Shell({
             style={{ background: "rgba(255,255,255,.85)", backdropFilter: "blur(8px)" }}
           >
             <div className="flex items-center gap-3">
-              {/* iRage logo with text fallback */}
               <img
                 src="https://www.irage.in/img/logo.png"
                 alt="iRage"
                 className="h-[22px]"
                 onError={(e) => {
-                  const el = e.currentTarget;
-                  el.style.display = "none";
-                  el.nextElementSibling?.removeAttribute("hidden");
+                  e.currentTarget.style.display = "none";
+                  (e.currentTarget.nextElementSibling as HTMLElement)?.removeAttribute("hidden");
                 }}
               />
               <span hidden style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, color: "var(--ink-800)" }}>iRage</span>
@@ -84,20 +96,14 @@ export default function Shell({
 
             <div className="flex items-center gap-[14px]">
               {showStepper && (
-                <>
-                  <span className="text-[11.5px] text-[var(--fg3)] flex items-center gap-[6px]">
-                    <Check size={14} strokeWidth={2} color="var(--success)" />
-                    Saved
-                  </span>
-                  <Button
-                    variant="secondary"
-                    onClick={onSave}
-                    style={{ padding: "9px 16px", fontSize: 13.5 }}
-                    leading={<LogOut size={14} strokeWidth={1.75} />}
-                  >
-                    Save &amp; exit
-                  </Button>
-                </>
+                <Button
+                  variant="secondary"
+                  onClick={handleSaveExit}
+                  style={{ padding: "9px 16px", fontSize: 13.5 }}
+                  leading={<LogOut size={14} strokeWidth={1.75} />}
+                >
+                  Save &amp; exit
+                </Button>
               )}
               {!showStepper && showResume && (
                 <span className="text-[13px] text-[var(--fg2)]">
@@ -116,6 +122,8 @@ export default function Shell({
           </div>
         </main>
       </div>
+
+      {toast && <Toast message={toast} />}
     </div>
   );
 }
