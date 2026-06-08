@@ -81,11 +81,27 @@ export async function updateApplication(appId: string, patch: Partial<Applicatio
 
 export async function getAllApplications(): Promise<Application[]> {
   const r = getClient();
-  // Get all app IDs ordered by newest first
-  const ids = await r.zrevrange("all_apps", 0, -1);
-  if (!ids.length) return [];
-  const raws = await Promise.all(ids.map(id => r.get(`app:${id}`)));
-  return raws.filter(Boolean).map(v => JSON.parse(v!));
+
+  // Scan ALL app:* keys (catches apps created before the sorted-set index existed)
+  const allKeys: string[] = [];
+  let cursor = "0";
+  do {
+    const [next, keys] = await r.scan(cursor, "MATCH", "app:*", "COUNT", 200);
+    cursor = next;
+    allKeys.push(...keys);
+  } while (cursor !== "0");
+
+  if (!allKeys.length) return [];
+  const raws = await Promise.all(allKeys.map(k => r.get(k)));
+  const apps = raws.filter(Boolean).map(v => JSON.parse(v!) as Application);
+
+  // Backfill the sorted-set index for any missing entries
+  for (const app of apps) {
+    await r.zadd("all_apps", "NX", new Date(app.createdAt).getTime(), app.id);
+  }
+
+  // Sort newest first
+  return apps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
