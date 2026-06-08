@@ -40,7 +40,7 @@ export async function upsertInvestor(mobile: string): Promise<Investor> {
   return investor;
 }
 
-export async function getInvestor(id: string): Promise<Investor | null> {
+export async function getInvestorById(id: string): Promise<Investor | null> {
   const r = getClient();
   const v = await r.get(`investor:${id}`);
   return v ? JSON.parse(v) : null;
@@ -65,6 +65,8 @@ export async function getOrCreateApplication(investorId: string): Promise<Applic
   };
   await r.set(`app:${app.id}`, JSON.stringify(app));
   await r.set(`activeApp:${investorId}`, app.id);
+  // Add to global index (sorted by creation timestamp)
+  await r.zadd("all_apps", Date.now(), app.id);
   return app;
 }
 
@@ -75,6 +77,15 @@ export async function updateApplication(appId: string, patch: Partial<Applicatio
   const app = { ...JSON.parse(raw), ...patch, updatedAt: new Date().toISOString() };
   await r.set(`app:${appId}`, JSON.stringify(app));
   return app as Application;
+}
+
+export async function getAllApplications(): Promise<Application[]> {
+  const r = getClient();
+  // Get all app IDs ordered by newest first
+  const ids = await r.zrevrange("all_apps", 0, -1);
+  if (!ids.length) return [];
+  const raws = await Promise.all(ids.map(id => r.get(`app:${id}`)));
+  return raws.filter(Boolean).map(v => JSON.parse(v!));
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
