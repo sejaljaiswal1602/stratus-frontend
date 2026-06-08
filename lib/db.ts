@@ -26,7 +26,7 @@ export interface Application {
   submittedAt?: string; createdAt: string; updatedAt: string;
 }
 export interface Document {
-  appId: string; docKey: string; fileName: string; status: string; uploadedAt: string;
+  appId: string; docKey: string; fileName: string; blobUrl?: string; status: string; uploadedAt: string;
 }
 
 // ── Investor ─────────────────────────────────────────────────────────────────
@@ -78,9 +78,9 @@ export async function updateApplication(appId: string, patch: Partial<Applicatio
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
-export async function upsertDocument(appId: string, docKey: string, fileName: string): Promise<Document> {
+export async function upsertDocument(appId: string, docKey: string, fileName: string, blobUrl?: string): Promise<Document> {
   const r = getClient();
-  const doc: Document = { appId, docKey, fileName, status: "UPLOADED", uploadedAt: new Date().toISOString() };
+  const doc: Document = { appId, docKey, fileName, blobUrl, status: "UPLOADED", uploadedAt: new Date().toISOString() };
   await r.hset(`docs:${appId}`, docKey, JSON.stringify(doc));
   return doc;
 }

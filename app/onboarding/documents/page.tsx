@@ -31,13 +31,31 @@ export default function DocumentsPage() {
     if (!["application/pdf","image/jpeg","image/png"].includes(file.type)) { setError("Only PDF, JPG, or PNG allowed."); return; }
     setError(null);
     setFiles(f => ({ ...f, [docKey]: { name: file.name, meta: "Uploading…", status: "uploading" } }));
+
     try {
-      await api.post("/api/documents/confirm", { docKey, fileName: file.name });
-      const size = file.size < 1024*1024 ? `${Math.round(file.size/1024)} KB` : `${(file.size/1024/1024).toFixed(1)} MB`;
+      const token = api.getToken();
+      const form = new FormData();
+      form.append("file", file);
+      form.append("docKey", docKey);
+
+      const res = await fetch("/api/documents/upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(err.error ?? "Upload failed");
+      }
+
+      const size = file.size < 1024*1024
+        ? `${Math.round(file.size/1024)} KB`
+        : `${(file.size/1024/1024).toFixed(1)} MB`;
       setFiles(f => ({ ...f, [docKey]: { name: file.name, meta: `${size} · uploaded`, status: "review" } }));
     } catch (e: any) {
       setFiles(f => { const n={...f}; delete n[docKey]; return n; });
-      setError(e.message ?? "Upload failed.");
+      setError(e.message ?? "Upload failed. Please try again.");
     }
   }
 
@@ -89,7 +107,7 @@ export default function DocumentsPage() {
         <div className="mt-4 flex items-start gap-[11px] bg-[var(--cyan-50)] border border-[var(--cyan-100)] rounded-[var(--r-lg)] px-[22px] py-[18px]">
           <Info size={20} strokeWidth={1.75} color="var(--cyan-600)" className="flex-shrink-0 mt-px" />
           <span className="text-[13px] text-[var(--cyan-800)]">
-            We'll verify each document against official databases. You'll get an email the moment everything is approved.
+            Documents are stored securely and used only for KYC verification.
           </span>
         </div>
 
